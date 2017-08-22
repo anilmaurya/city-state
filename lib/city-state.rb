@@ -62,6 +62,8 @@ module CS
     states_replace = states_replace[country.to_sym] || {} # we need just this country
     states_replace_inv = states_replace.invert # invert key with value, to ease the search
 
+    cities_merge_fn = File.join(FILES_FOLDER, "cities-merge.yml")
+    cities_merge =  YAML::load_file(cities_merge_fn)
     # read CSV line by line
     cities = {}
     states = {}
@@ -85,14 +87,13 @@ module CS
       # cities list: {TX: ["Texas City", "Another", "Another 2"]}
       cities.merge!({rec[STATE] => []}) if ! states.has_key?(rec[STATE])
       cities[rec[STATE]] << rec[CITY]
-
       # states list: {TX: "Texas", CA: "California"}
       if ! states.has_key?(rec[STATE])
         state = {rec[STATE] => rec[STATE_LONG]}
         states.merge!(state)
       end
     end
-
+    cities.merge!(cities_merge){|key, old, new| (old + new).uniq}
     # sort
     cities = Hash[cities.sort]
     states = Hash[states.sort]
@@ -113,7 +114,7 @@ module CS
     # we don't have used this method yet: discover by the file extension
     fn = Dir[File.join(FILES_FOLDER, "cities.*")].last
     @current_country = fn.blank? ? nil : fn.split(".").last
-    
+
     # there's no files: we'll install and use :US
     if @current_country.blank?
       @current_country = :US
@@ -121,7 +122,7 @@ module CS
 
     # we find a file: normalize the extension to something like :US
     else
-      @current_country = @current_country.to_s.upcase.to_sym    
+      @current_country = @current_country.to_s.upcase.to_sym
     end
 
     @current_country
